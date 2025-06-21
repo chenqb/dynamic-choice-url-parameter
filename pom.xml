@@ -4,12 +4,12 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>4.71</version>
+    <version>5.9</version>
     <relativePath />
   </parent>
   <groupId>com.chen.qa</groupId>
   <artifactId>dynamic-choice-url-parameter</artifactId>
-  <version>1.0.1</version>
+  <version>1.2.0-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <name>Dynamic Choice URL Parameter Plugin</name>
   <description>A Jenkins plugin that provides a dynamic choice parameter which loads options from a URL (supports JSON, XML, and TXT formats)</description>
@@ -26,11 +26,9 @@
     <tag>${scmTag}</tag>
     <url>https://github.com/${gitHubRepo}</url>
   </scm>
+
   <properties>
-    <revision>1.0</revision>
-    <changelist>-SNAPSHOT</changelist>
-    <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
-    <jenkins.version>2.462.1</jenkins.version>
+    <jenkins.version>2.504.2</jenkins.version>
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     <spotless.check.skip>false</spotless.check.skip>
   </properties>
@@ -39,47 +37,35 @@
     <dependencies>
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
-        <artifactId>bom-2.462.x</artifactId>
-        <version>4228.v0a_71308d905b_</version>
+        <artifactId>bom-2.504.x</artifactId>
+        <version>4924.v6b_eb_a_79a_d9d0</version>
         <type>pom</type>
         <scope>import</scope>
-        <!--        <scope>import</scope>-->
       </dependency>
     </dependencies>
   </dependencyManagement>
 
   <dependencies>
     <dependency>
-      <groupId>org.jenkins-ci</groupId>
-      <artifactId>symbol-annotation</artifactId>
-      <version>1.24</version>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>structs</artifactId>
+    </dependency>
+
+    <!-- Test dependencies -->
+    <dependency>
+      <groupId>org.jenkins-ci.plugins.workflow</groupId>
+      <artifactId>workflow-job</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
       <artifactId>workflow-cps</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
       <artifactId>workflow-durable-task-step</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.jenkins-ci.plugins.workflow</groupId>
-      <artifactId>workflow-job</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.jenkins-ci.plugins.workflow</groupId>
-      <artifactId>workflow-scm-step</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.jenkins-ci.plugins.workflow</groupId>
-      <artifactId>workflow-step-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.jenkins-ci.main</groupId>
-      <artifactId>jenkins-core</artifactId>
-      <version>${jenkins.version}</version>
-      <scope>provided</scope>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 

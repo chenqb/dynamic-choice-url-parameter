@@ -1,5 +1,6 @@
 package com.chen.qa;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.init.InitMilestone;
 import hudson.init.Initializer;
@@ -29,8 +30,7 @@ import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.*;
 
-@Symbol("dynamicChoiceUrl")
-public class DynamicChoiceUrlParameterDefinition extends SimpleParameterDefinition {
+public class DynamicChoiceUrlParameterDefinition extends ParameterDefinition {
 
     private static final java.util.logging.Logger LOGGER =
             java.util.logging.Logger.getLogger(DynamicChoiceUrlParameterDefinition.class.getName());
@@ -80,11 +80,18 @@ public class DynamicChoiceUrlParameterDefinition extends SimpleParameterDefiniti
     }
 
     @Override
+    public ParameterValue createValue(StaplerRequest req) {
+        String[] values = req.getParameterValues(getName());
+        if (values == null || values.length == 0) {
+            return getDefaultParameterValue();
+        }
+        return createValue(values[0]);
+    }
+
     public ParameterValue getDefaultParameterValue() {
         return new DynamicChoiceUrlParameterValue(getName(), "");
     }
 
-    @Override
     public ParameterValue createValue(String value) {
         return new DynamicChoiceUrlParameterValue(getName(), value);
     }
@@ -203,8 +210,10 @@ public class DynamicChoiceUrlParameterDefinition extends SimpleParameterDefiniti
     }
 
     @Extension
+    @Symbol({"dynamicChoiceUrl"})
     public static final class DescriptorImpl extends ParameterDescriptor {
         @Override
+        @NonNull
         public String getDisplayName() {
             return "Dynamic Choice URL Parameter";
         }
@@ -212,7 +221,7 @@ public class DynamicChoiceUrlParameterDefinition extends SimpleParameterDefiniti
         @Override
         public ParameterDefinition newInstance(StaplerRequest req, JSONObject formData) throws FormException {
             if (req == null) {
-                return super.newInstance(null, formData);
+                return super.newInstance((StaplerRequest) null, formData);
             }
             return req.bindJSON(DynamicChoiceUrlParameterDefinition.class, formData);
         }
