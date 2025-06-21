@@ -17,6 +17,10 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.stream.Collectors;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
@@ -24,11 +28,6 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.*;
-
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
 
 @Symbol("dynamicChoiceUrl")
 public class DynamicChoiceUrlParameterDefinition extends SimpleParameterDefinition {
@@ -45,9 +44,11 @@ public class DynamicChoiceUrlParameterDefinition extends SimpleParameterDefiniti
 
     private final String url;
     private final String jsonPath;
+    private final String filter;
 
     @DataBoundConstructor
-    public DynamicChoiceUrlParameterDefinition(String name, String url, String jsonPath, String description) {
+    public DynamicChoiceUrlParameterDefinition(
+            String name, String url, String jsonPath, String description, String filter) {
         super(name, description);
         if (url == null || url.trim().isEmpty()) {
             throw new IllegalArgumentException("URL 不能为空");
@@ -57,6 +58,7 @@ public class DynamicChoiceUrlParameterDefinition extends SimpleParameterDefiniti
         }
         this.url = url;
         this.jsonPath = jsonPath;
+        this.filter = filter;
     }
 
     public String getUrl() {
@@ -65,6 +67,10 @@ public class DynamicChoiceUrlParameterDefinition extends SimpleParameterDefiniti
 
     public String getJsonPath() {
         return jsonPath;
+    }
+
+    public String getFilter() {
+        return filter;
     }
 
     @Override
@@ -138,7 +144,8 @@ public class DynamicChoiceUrlParameterDefinition extends SimpleParameterDefiniti
                     String parentExpression = "/" + jsonPath.replace('.', '/');
                     LOGGER.log(Level.INFO, "使用XPath查找父节点: {0}", parentExpression);
 
-                    org.w3c.dom.Node parentNode = (org.w3c.dom.Node) xpath.evaluate(parentExpression, doc, XPathConstants.NODE);
+                    org.w3c.dom.Node parentNode =
+                            (org.w3c.dom.Node) xpath.evaluate(parentExpression, doc, XPathConstants.NODE);
 
                     if (parentNode != null) {
                         // 遍历父节点的所有子元素
@@ -156,7 +163,9 @@ public class DynamicChoiceUrlParameterDefinition extends SimpleParameterDefiniti
                     } else {
                         return List.of("错误: XML 路径无效");
                     }
-                } catch (javax.xml.parsers.ParserConfigurationException | org.xml.sax.SAXException | XPathExpressionException e) {
+                } catch (javax.xml.parsers.ParserConfigurationException
+                        | org.xml.sax.SAXException
+                        | XPathExpressionException e) {
                     LOGGER.log(Level.SEVERE, "解析 XML 时发生错误", e);
                     return List.of("错误: " + e.getMessage());
                 }
@@ -172,6 +181,20 @@ public class DynamicChoiceUrlParameterDefinition extends SimpleParameterDefiniti
                 return List.of("错误：不支持的文件类型");
             }
             LOGGER.log(Level.INFO, "最终获取到的选项: {0}", options);
+
+            // 如果 filter 不为空，则进行过滤
+            if (filter != null && !filter.trim().isEmpty()) {
+                LOGGER.log(Level.INFO, "使用正则表达式进行过滤: {0}", filter);
+                List<String> filteredOptions = new ArrayList<>();
+                filteredOptions.add(""); // 空值选项不过滤
+                for (String option : options) {
+                    if (!option.isEmpty() && option.matches(filter)) {
+                        filteredOptions.add(option);
+                    }
+                }
+                LOGGER.log(Level.INFO, "过滤后的选项: {0}", filteredOptions);
+                return filteredOptions;
+            }
             return options;
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "获取选项时发生错误", e);
