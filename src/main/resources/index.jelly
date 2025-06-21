@@ -1,0 +1,9 @@
+<?jelly escape-by-default='true'?>
+<div>
+    动态选项参数插件，支持从远程 URL 加载选项列表。支持 JSON、XML 和 TXT 格式。
+    <ul>
+        <li>JSON：通过 jsonPath 指定选项列表位置</li>
+        <li>XML：通过 xmlPath 指定选项列表位置</li>
+        <li>TXT：每行作为一个选项</li>
+    </ul>
+</div>
