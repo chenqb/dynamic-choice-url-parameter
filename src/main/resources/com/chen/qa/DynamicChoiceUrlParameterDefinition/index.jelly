@@ -4,9 +4,10 @@
     <f:entry title="${it.name}" description="${it.description}">
         <div name="parameter">
             <input type="hidden" name="name" value="${it.name}" />
+            <j:set var="currentValue" value="${parameterValue.value}" />
             <select name="value" class="jenkins-select__input">
                 <j:forEach var="option" items="${it.getOptions()}">
-                    <f:option value="${option}">${option}</f:option>
+                    <f:option value="${option}" selected="${option.equals(currentValue)}">${option}</f:option>
                 </j:forEach>
             </select>
         </div>

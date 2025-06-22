@@ -218,7 +218,7 @@ public class DynamicChoiceUrlParameterDefinition extends ParameterDefinition {
 
     @Extension
     @Symbol({"dynamicChoiceUrl"})
-    public static final class DescriptorImpl extends ParameterDescriptor {
+    public static class DescriptorImpl extends ParameterDescriptor {
         @Override
         @NonNull
         public String getDisplayName() {

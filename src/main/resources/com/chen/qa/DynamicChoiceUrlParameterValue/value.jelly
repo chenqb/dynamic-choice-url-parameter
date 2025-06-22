@@ -1,4 +1,16 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core">
-  ${it.value}
+    <div class="jenkins-form-item tr">
+        <div class="jenkins-form-label help-sibling">
+            ${it.name}
+        </div>
+        <div class="setting-main">
+            <div name="parameter">
+                <!-- This inner div is what Jenkins' specific CSS targets for the value display -->
+                <div class="jenkins-input">
+                    ${it.value}
+                </div>
+            </div>
+        </div>
+    </div>
 </j:jelly> 
