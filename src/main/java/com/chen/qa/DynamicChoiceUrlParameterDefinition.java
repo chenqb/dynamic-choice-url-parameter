@@ -6,7 +6,6 @@ import hudson.init.InitMilestone;
 import hudson.init.Initializer;
 import hudson.model.ParameterDefinition;
 import hudson.model.ParameterValue;
-import hudson.model.SimpleParameterDefinition;
 import hudson.util.FormValidation;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -75,25 +74,33 @@ public class DynamicChoiceUrlParameterDefinition extends ParameterDefinition {
 
     @Override
     public ParameterValue createValue(StaplerRequest req, JSONObject jo) {
-        String value = jo.getString("value");
-        return new DynamicChoiceUrlParameterValue(getName(), value);
+        LOGGER.log(Level.INFO, "Creating value from JSONObject: {0}", jo.toString());
+        DynamicChoiceUrlParameterValue value = req.bindJSON(DynamicChoiceUrlParameterValue.class, jo);
+        value.setDescription(getDescription());
+        LOGGER.log(
+                Level.INFO,
+                "Created parameter value: {0} with value ''{1}''",
+                new Object[] {value.getName(), value.getValue()});
+        return value;
     }
 
     @Override
     public ParameterValue createValue(StaplerRequest req) {
-        String[] values = req.getParameterValues(getName());
-        if (values == null || values.length == 0) {
-            return getDefaultParameterValue();
+        LOGGER.info("Entering createValue(StaplerRequest req)");
+        String[] values = req.getParameterValues("value");
+        if (values == null || values.length == 0 || values[0].isEmpty()) {
+            LOGGER.warning("Could not find 'value' in request. Returning empty parameter value.");
+            return new DynamicChoiceUrlParameterValue(getName(), "", getDescription());
         }
-        return createValue(values[0]);
+        String selectedValue = values[0];
+        LOGGER.info("Found value '" + selectedValue + "' for parameter '" + getName() + "'");
+        return new DynamicChoiceUrlParameterValue(getName(), selectedValue, getDescription());
     }
 
+    @Override
     public ParameterValue getDefaultParameterValue() {
-        return new DynamicChoiceUrlParameterValue(getName(), "");
-    }
-
-    public ParameterValue createValue(String value) {
-        return new DynamicChoiceUrlParameterValue(getName(), value);
+        LOGGER.log(Level.INFO, "getDefaultParameterValue() called, creating empty value.");
+        return new DynamicChoiceUrlParameterValue(getName(), "", getDescription());
     }
 
     public List<String> getOptions() {
