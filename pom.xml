@@ -13,7 +13,7 @@
   <packaging>hpi</packaging>
   <name>Dynamic Choice URL Parameter Plugin</name>
   <description>A Jenkins plugin that provides a dynamic choice parameter which loads options from a URL (supports JSON, XML, and TXT formats)</description>
-  <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
+  <url>https://github.com/chenqb/dynamic-choice-url-parameter</url>
   <licenses>
     <license>
       <name>MIT License</name>

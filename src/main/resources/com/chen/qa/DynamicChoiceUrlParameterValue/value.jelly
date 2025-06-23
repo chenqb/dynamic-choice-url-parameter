@@ -4,9 +4,13 @@
         <div class="jenkins-form-label help-sibling">
             ${it.name}
         </div>
+        <j:if test="${it.description != null and it.description != ''}">
+            <div class="jenkins-form-description">
+                ${it.description}
+            </div>
+        </j:if>
         <div class="setting-main">
             <div name="parameter">
-                <!-- This inner div is what Jenkins' specific CSS targets for the value display -->
                 <div class="jenkins-input">
                     ${it.value}
                 </div>
