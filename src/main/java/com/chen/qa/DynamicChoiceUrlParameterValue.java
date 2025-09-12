@@ -1,10 +1,9 @@
 package com.chen.qa;
 
 import hudson.model.ParameterValue;
+import java.util.Objects;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.export.Exported;
-
-import java.util.Objects;
 
 public class DynamicChoiceUrlParameterValue extends ParameterValue {
 
@@ -33,7 +32,7 @@ public class DynamicChoiceUrlParameterValue extends ParameterValue {
     }
 
     @Override
-    public void buildEnvironment(hudson.model.Run<?,?> run, hudson.EnvVars env) {
+    public void buildEnvironment(hudson.model.Run<?, ?> run, hudson.EnvVars env) {
         env.put(getName(), value);
     }
 

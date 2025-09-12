@@ -10,6 +10,7 @@ import hudson.util.FormValidation;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -77,10 +78,9 @@ public class DynamicChoiceUrlParameterDefinition extends ParameterDefinition {
         LOGGER.log(Level.INFO, "Creating value from JSONObject: {0}", jo.toString());
         DynamicChoiceUrlParameterValue value = req.bindJSON(DynamicChoiceUrlParameterValue.class, jo);
         value.setDescription(getDescription());
-        LOGGER.log(
-                Level.INFO,
-                "Created parameter value: {0} with value ''{1}''",
-                new Object[] {value.getName(), value.getValue()});
+        LOGGER.log(Level.INFO, "Created parameter value: {0} with value ''{1}''", new Object[] {
+            value.getName(), value.getValue()
+        });
         return value;
     }
 
@@ -111,37 +111,105 @@ public class DynamicChoiceUrlParameterDefinition extends ParameterDefinition {
             URL u = new URL(url);
             String urlPath = u.getPath().toLowerCase();
             String content;
+            String contentType = null;
+
+            // 使用HttpURLConnection来获取Content-Type
+            HttpURLConnection connection = (HttpURLConnection) u.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(10000); // 10秒连接超时
+            connection.setReadTimeout(30000); // 30秒读取超时
+            connection.setRequestProperty("User-Agent", "Jenkins-DynamicChoiceUrlParameter/1.2.0");
+
             try (BufferedReader reader =
-                    new BufferedReader(new InputStreamReader(u.openStream(), StandardCharsets.UTF_8))) {
+                    new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
                 content = reader.lines().collect(Collectors.joining("\n"));
             }
+
+            // 获取Content-Type
+            contentType = connection.getContentType();
+            LOGGER.log(Level.INFO, "获取到内容类型: {0}", contentType);
             LOGGER.log(Level.INFO, "获取到内容: {0}", content);
 
-            if (urlPath.endsWith(".json")) {
+            // 判断内容类型：优先使用Content-Type，其次使用文件扩展名
+            boolean isJson = false;
+            boolean isXml = false;
+            boolean isText = false;
+
+            if (contentType != null) {
+                if (contentType.toLowerCase().contains("application/json")
+                        || contentType.toLowerCase().contains("text/json")) {
+                    isJson = true;
+                } else if (contentType.toLowerCase().contains("application/xml")
+                        || contentType.toLowerCase().contains("text/xml")) {
+                    isXml = true;
+                } else if (contentType.toLowerCase().contains("text/plain")) {
+                    isText = true;
+                }
+            }
+
+            // 如果Content-Type无法确定，则回退到文件扩展名判断
+            if (!isJson && !isXml && !isText) {
+                if (urlPath.endsWith(".json")) {
+                    isJson = true;
+                } else if (urlPath.endsWith(".xml")) {
+                    isXml = true;
+                } else if (urlPath.endsWith(".txt")) {
+                    isText = true;
+                } else {
+                    // 默认尝试JSON解析（适用于API接口）
+                    isJson = true;
+                    LOGGER.log(Level.INFO, "无法确定内容类型，默认尝试JSON解析");
+                }
+            }
+
+            if (isJson) {
                 // JSON a
                 Object jsonData = JSONSerializer.toJSON(content);
                 if (jsonData instanceof JSONObject) {
                     JSONObject jsonObject = (JSONObject) jsonData;
-                    String[] paths = jsonPath.split("\\.");
-                    Object current = jsonObject;
-                    for (String p : paths) {
-                        if (current instanceof JSONObject && ((JSONObject) current).has(p)) {
-                            current = ((JSONObject) current).get(p);
+                    
+                    // 检查是否使用了数组字段提取语法 (如 data.versions[].version)
+                    if (jsonPath.contains("[].")) {
+                        // 解析数组字段提取语法
+                        String[] parts = jsonPath.split("\\[\\]\\.", 2);
+                        if (parts.length == 2) {
+                            String arrayPath = parts[0];
+                            String fieldName = parts[1];
+                            
+                            // 获取数组
+                            Object arrayObj = getValueByPath(jsonObject, arrayPath);
+                            if (arrayObj instanceof JSONArray) {
+                                JSONArray array = (JSONArray) arrayObj;
+                                for (Object item : array) {
+                                    if (item instanceof JSONObject) {
+                                        JSONObject itemObj = (JSONObject) item;
+                                        if (itemObj.has(fieldName)) {
+                                            Object fieldValue = itemObj.get(fieldName);
+                                            options.add(fieldValue == null ? "" : fieldValue.toString());
+                                        }
+                                    }
+                                }
+                            } else {
+                                return List.of("错误：路径未指向数组");
+                            }
                         } else {
-                            return List.of("错误：无效的 JSON 路径");
-                        }
-                    }
-
-                    if (current instanceof JSONArray) {
-                        for (Object o : (JSONArray) current) {
-                            options.add(o == null ? "" : o.toString());
+                            return List.of("错误：无效的数组字段提取语法，请使用 data.versions[].version 格式");
                         }
                     } else {
-                        return List.of("错误：JSON 路径未指向列表");
+                        // 原有的简单路径解析
+                        Object current = getValueByPath(jsonObject, jsonPath);
+                        
+                        if (current instanceof JSONArray) {
+                            for (Object o : (JSONArray) current) {
+                                options.add(o == null ? "" : o.toString());
+                            }
+                        } else {
+                            return List.of("错误：JSON 路径未指向列表");
+                        }
                     }
                 }
-            } else if (urlPath.endsWith(".xml")) {
-                LOGGER.log(Level.INFO, "解析 XML 文件");
+            } else if (isXml) {
+                LOGGER.log(Level.INFO, "解析 XML 内容");
                 try {
                     javax.xml.parsers.DocumentBuilderFactory factory =
                             javax.xml.parsers.DocumentBuilderFactory.newInstance();
@@ -183,16 +251,16 @@ public class DynamicChoiceUrlParameterDefinition extends ParameterDefinition {
                     LOGGER.log(Level.SEVERE, "解析 XML 时发生错误", e);
                     return List.of("错误: " + e.getMessage());
                 }
-            } else if (urlPath.endsWith(".txt")) {
-                // TXT a
+            } else if (isText) {
+                // TXT 内容处理
                 for (String line : content.split("\\r?\\n")) {
                     if (!line.trim().isEmpty()) {
                         options.add(line.trim());
                     }
                 }
             } else {
-                LOGGER.log(Level.WARNING, "不支持的文件类型: {0}", urlPath);
-                return List.of("错误：不支持的文件类型");
+                LOGGER.log(Level.WARNING, "不支持的内容类型: {0}", contentType != null ? contentType : "未知");
+                return List.of("错误：不支持的内容类型");
             }
             LOGGER.log(Level.INFO, "最终获取到的选项: {0}", options);
 
@@ -214,6 +282,22 @@ public class DynamicChoiceUrlParameterDefinition extends ParameterDefinition {
             LOGGER.log(Level.SEVERE, "获取选项时发生错误", e);
             return List.of("Error: " + e.getMessage());
         }
+    }
+
+    /**
+     * 根据路径获取JSON对象中的值
+     */
+    private Object getValueByPath(JSONObject jsonObject, String path) {
+        String[] paths = path.split("\\.");
+        Object current = jsonObject;
+        for (String p : paths) {
+            if (current instanceof JSONObject && ((JSONObject) current).has(p)) {
+                current = ((JSONObject) current).get(p);
+            } else {
+                return null;
+            }
+        }
+        return current;
     }
 
     @Extension

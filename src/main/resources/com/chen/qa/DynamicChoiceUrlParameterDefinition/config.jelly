@@ -8,6 +8,7 @@
     </f:entry>
     <f:entry title="路径" field="jsonPath">
         <f:textbox name="parameter.jsonPath" value="${instance.jsonPath}" />
+        <f:description>支持简单路径（如：data.versions）或数组字段提取（如：data.versions[].version）</f:description>
     </f:entry>
     <f:entry title="过滤（支持正则表达式）" field="filter">
         <f:textbox name="parameter.filter" value="${instance.filter}" />
