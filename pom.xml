@@ -9,7 +9,7 @@
   </parent>
   <groupId>com.chen.qa</groupId>
   <artifactId>dynamic-choice-url-parameter</artifactId>
-  <version>1.2.1-SNAPSHOT</version>
+  <version>1.2.2-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <name>Dynamic Choice URL Parameter Plugin</name>
   <description>A Jenkins plugin that provides a dynamic choice parameter which loads options from a URL (supports JSON, XML, and TXT formats)</description>

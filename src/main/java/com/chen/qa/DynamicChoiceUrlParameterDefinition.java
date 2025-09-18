@@ -275,7 +275,18 @@ public class DynamicChoiceUrlParameterDefinition extends ParameterDefinition {
                     }
                 }
                 LOGGER.log(Level.INFO, "过滤后的选项: {0}", filteredOptions);
-                return filteredOptions;
+                options = filteredOptions; // 使用过滤后的选项继续处理
+            }
+            
+            // 对选项进行排序（保留空值在第一位）
+            if (options.size() > 1) {
+                String emptyOption = options.get(0); // 保存空值选项
+                List<String> nonEmptyOptions = new ArrayList<>(options.subList(1, options.size()));
+                nonEmptyOptions.sort(String::compareToIgnoreCase); // 按名称排序，忽略大小写
+                options.clear();
+                options.add(emptyOption); // 重新添加空值选项到第一位
+                options.addAll(nonEmptyOptions); // 添加排序后的选项
+                LOGGER.log(Level.INFO, "选项已按名称排序: {0}", options);
             }
             return options;
         } catch (IOException e) {
